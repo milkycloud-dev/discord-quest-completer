@@ -85,11 +85,12 @@ class SpoofEngine:
                 args = [final_exe_path, self.window_title]
             else:
                 # For Linux, Discord scans /proc for executable names.
-                runner_src = "/bin/sleep"
-                args = [final_exe_path, "10000000"] # Sleep for ~115 days
-                if "coreutils" in os.path.realpath(runner_src):
-                    runner_src = shutil.which("perl") or runner_src
-                    args = [final_exe_path, "-e", "sleep 10000000"]
+                runner_src = shutil.which("perl")
+                if runner_src:
+                    args = [final_exe_path, "-e", "$p = getppid(); sleep 2 while getppid() == $p;"]
+                else:
+                    runner_src = "/bin/sleep"
+                    args = [final_exe_path, "10000000"]
 
             shutil.copy(runner_src, final_exe_path)
         except Exception as e:
