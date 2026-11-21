@@ -19,7 +19,7 @@
 **Discord Quest Completer** (formerly *Discord Orbs Earner*) is an experimental tool that parses Discord's detectable-games database and runs mock game instances ("spoofing") so the Discord desktop client believes a game is running. Use it to test Discord Quests, game detection and Rich Presence without downloading or installing the actual games.
 
 > [!WARNING]
-> **Read before use.** This is an experimental tool provided "as is" for educational and research purposes. It is **strictly prohibited** to use it for profit, automated farming, or circumventing Discord's Terms of Service. Faking activity may get your account flagged or banned. You use this software entirely at your own risk. This project is not affiliated with or endorsed by Discord Inc.
+> **Read before use.** This is an experimental tool provided "as is" for educational and research purposes. It is **not intended** for profit, automated farming, or circumventing Discord's Terms of Service, and you are responsible for complying with them. Faking activity may get your account flagged or banned. You use this software entirely at your own risk. This project is not affiliated with or endorsed by Discord Inc.
 
 ## Features
 
@@ -76,6 +76,10 @@ Discord's client scans running processes and matches them with the `executables`
 - RPC mode sets Rich Presence only. Whether a Quest is credited for it depends on Discord and may change at any time.
 - Discord can change its detection at any time.
 
+## License
+
+Released under the [MIT License](LICENSE). The icon is an original design and does not use Discord's logo.
+
 ## Credits
 
 The idea of an RPC mode is inspired by [markterence/discord-quest-completer](https://github.com/markterence/discord-quest-completer). This project is independent and shares no code with it.
@@ -95,7 +99,7 @@ discord quest completer, discord quests, discord orbs, complete discord quests w
 **Discord Quest Completer** (раньше *Discord Orbs Earner*) — экспериментальная утилита для Windows и Linux: парсит базу игр Discord и запускает фиктивные процессы («спуфинг»), чтобы клиент Discord считал, что игра запущена. Подходит для проверки заданий (Quests), определения игр и Rich Presence без установки самих игр.
 
 > [!WARNING]
-> **ВНИМАНИЕ! ПРОЧТИТЕ ПЕРЕД ИСПОЛЬЗОВАНИЕМ.** Программа предоставляется «как есть» исключительно в образовательных и исследовательских целях. **Строго запрещено** использовать её в коммерческих целях, для автоматизированного фарминга или обхода Правил использования (Terms of Service) Discord. Имитация активности может привести к блокировке аккаунта. Вы используете софт на свой страх и риск. Проект не связан с Discord Inc.
+> **ВНИМАНИЕ! ПРОЧТИТЕ ПЕРЕД ИСПОЛЬЗОВАНИЕМ.** Программа предоставляется «как есть» исключительно в образовательных и исследовательских целях. Она **не предназначена** для коммерческих целей, автоматизированного фарминга или обхода Правил использования (Terms of Service) Discord, ответственность за их соблюдение лежит на вас. Имитация активности может привести к блокировке аккаунта. Вы используете софт на свой страх и риск. Проект не связан с Discord Inc.
 
 ## Особенности
 
@@ -127,3 +131,7 @@ discord quest completer, discord quests, discord orbs, complete discord quests w
 - Консольные задания (PlayStation, Xbox) требуют реально привязанной консоли, эмулировать их нельзя.
 - Несколько общих exe (например, `>hl2.exe` движка Source) Discord по фиктивному процессу не распознаёт.
 - RPC-режим только выставляет Rich Presence: засчитается ли задание, решает Discord.
+
+## Лицензия
+
+MIT, см. [LICENSE](LICENSE). Иконка нарисована с нуля и не использует логотип Discord.
