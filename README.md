@@ -10,8 +10,8 @@
 </p>
 
 <p align="center">
-  <a href="../../releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/milkycloud-dev/discord-quest-completer"></a>
-  <a href="LICENSE"><img alt="License" src="https://img.shields.io/github/license/milkycloud-dev/discord-quest-completer"></a>
+  <a href="../../releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/milkycloud-dev/discord-quest-completer?style=flat&cacheSeconds=600"></a>
+  <a href="LICENSE"><img alt="License" src="https://img.shields.io/github/license/milkycloud-dev/discord-quest-completer?style=flat&cacheSeconds=600"></a>
   <img alt="Platforms" src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux-blue">
   <img alt="Python" src="https://img.shields.io/badge/python-3.10%2B-blue">
 </p>
@@ -27,7 +27,7 @@
 - **Two spoofing modes**
   - **Process mode**: a tiny dummy process named exactly like the game executable, created at the full relative path Discord expects (`win64/game.exe`, `_retail_/wow-64.exe`, ...).
   - **RPC mode** (automatic for games without a known executable): registers Rich Presence for the real Discord application ID through the local Discord IPC socket.
-- **Cross-platform**: a native zero-metadata C# runner on Windows, and a plain system process on Linux (works with the uutils-based `sleep` of newer Ubuntu too).
+- **Cross-platform**: a native zero-metadata C# runner on Windows, and a tiny system process on Linux that exits by itself when the app closes, so no game is left "running".
 - **Fast**: the processed game list is cached on disk and shown instantly on start, then refreshed in the background (ETag check). Search is debounced, results are paginated and also match game aliases (for example `gta 6`).
 - **Modern split-screen GUI** (Flet) with live system log and per-game settings (executable, window title), plus a **CLI** mode (`--cli`).
 - **English by default**, Russian included (switch in the top-right corner).
@@ -40,7 +40,7 @@
 
 ## Installation and usage
 
-Download the latest standalone build for Windows or Linux from the [Releases](../../releases/latest) page, or run from source:
+Download the latest standalone build for Windows or Linux from the [Releases](../../releases/latest) page (on Linux: unzip, `chmod +x DiscordQuestCompleter`, run it), or run from source:
 
 **Windows**
 
@@ -78,7 +78,7 @@ Discord's client scans running processes and matches them with the `executables`
 
 ## License
 
-Released under the [MIT License](LICENSE). The icon is an original design and does not use Discord's logo.
+Released under the [MIT License](LICENSE).
 
 ## Credits
 
@@ -105,7 +105,7 @@ discord quest completer, discord quests, discord orbs, complete discord quests w
 
 - **25 387 игр** из базы Discord (`applications/detectable`), включая игры без exe в базе (например, *Grand Theft Auto VI*).
 - **Два режима**: фиктивный процесс с полным путём к exe (`win64/game.exe`) и **RPC-режим** (автоматически для игр без exe): Rich Presence с настоящим ID приложения через локальный IPC Discord.
-- **Windows и Linux**: нативный C# раннер на Windows и обычный системный процесс на Linux.
+- **Windows и Linux**: нативный C# раннер на Windows и лёгкий системный процесс на Linux, который сам завершается вместе с приложением.
 - **Быстро**: обработанный список игр кэшируется и показывается мгновенно, обновление идёт в фоне. Поиск с задержкой, постраничный вывод, поиск по алиасам (`gta 6`).
 - **GUI на Flet** с системным логом и настройками игры, плюс **CLI** (`--cli`).
 - **Английский язык по умолчанию**, русский переключается в правом верхнем углу.
@@ -134,4 +134,4 @@ discord quest completer, discord quests, discord orbs, complete discord quests w
 
 ## Лицензия
 
-MIT, см. [LICENSE](LICENSE). Иконка нарисована с нуля и не использует логотип Discord.
+MIT, см. [LICENSE](LICENSE).
