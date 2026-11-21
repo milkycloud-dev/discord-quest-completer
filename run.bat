@@ -2,9 +2,9 @@
 :: Устанавливаем рабочую директорию на папку, где лежит этот .bat файл
 cd /d "%~dp0"
 
-title Discord Orbs Earner Setup
+title Discord Quest Completer Setup
 echo ===================================
-echo   Discord Orbs Earner Setup ^& Run
+echo   Discord Quest Completer Setup ^& Run
 echo ===================================
 echo.
 

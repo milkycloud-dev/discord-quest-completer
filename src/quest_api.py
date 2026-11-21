@@ -1,28 +1,62 @@
 import threading
 import json
+import re
 import requests
 import os
 
+API_ENDPOINT = "https://discord.com/api/v9/applications/detectable"
+CACHE_SCHEMA = 2
+
+
+def build_list(raw):
+    """
+    Converts the raw Discord detectable-applications response into the app's game list.
+    Entries without any known executable (unreleased games) are kept with a generated name.
+    """
+    games = []
+    for entry in raw:
+        executables = entry.get('executables', [])
+        exe_list = [e['name'] for e in executables if e.get('os') == 'win32' and e.get('name')]
+        if not exe_list:
+            exe_list = [e['name'] for e in executables if e.get('name')]
+        title = entry.get('name', 'Unknown App')
+        no_exe = not exe_list
+        if no_exe:
+            exe_list = [(re.sub(r'[^a-z0-9]+', '', title.lower()) or 'game') + '.exe']
+
+        game_id = entry.get('id')
+        icon_hash = entry.get('icon_hash')
+        icon_url = None
+        if icon_hash:
+            icon_url = f"https://cdn.discordapp.com/app-icons/{game_id}/{icon_hash}.png?size=64"
+
+        aliases = [a for a in entry.get('aliases', []) if a]
+        games.append({
+            "title": title,
+            "id": game_id,
+            "exes": exe_list,
+            "icon_url": icon_url,
+            "aliases": aliases,
+            "no_exe": no_exe,
+            "search": " ".join([title] + aliases).lower()
+        })
+    return games
+
+
 class DiscordAPIWorker:
     """
-    Worker class responsible for fetching the detectable games database 
-    from the Discord API asynchronously.
+    Worker class responsible for loading the detectable games database.
+    The processed list is cached on disk and shown immediately; the network
+    refresh runs afterwards and only replaces the list when the data changed.
     """
     def __init__(self, on_data, on_status):
-        """
-        Initializes the API Worker.
-        
-        Args:
-            on_data (function): Callback function to receive the parsed list of games.
-            on_status (function): Callback function to receive status updates.
-        """
         self.on_data = on_data
         self.on_status = on_status
         base_dir = os.path.dirname(os.path.abspath(__file__))
         self.save_dir = os.path.join(base_dir, "cache")
         self.save_file = os.path.join(self.save_dir, "detectable.json")
-        
-        # Ensure the cache directory exists
+        self.games_file = os.path.join(self.save_dir, "games.json")
+
         if not os.path.exists(self.save_dir):
             try:
                 os.makedirs(self.save_dir)
@@ -30,73 +64,72 @@ class DiscordAPIWorker:
                 pass
 
     def start(self):
-        """
-        Starts the worker in a separate daemon thread to avoid blocking the main UI/CLI.
-        """
         thread = threading.Thread(target=self.run)
         thread.daemon = True
         thread.start()
 
     def run(self):
-        """
-        The main execution function of the thread.
-        Downloads the latest detectable games JSON from Discord, caches it, 
-        and then processes the data. Falls back to offline cache if the network request fails.
-        """
-        api_endpoint = "https://discordapp.com/api/v9/applications/detectable"
-        self.on_status("Connecting to Discord API...")
-        
-        response_data = None
-        try:
-            r = requests.get(api_endpoint, timeout=10)
-            if r.status_code == 200:
-                with open(self.save_file, 'wb') as f:
-                    f.write(r.content)
-                response_data = r.json()
-            else:
-                self.on_status(f"HTTP {r.status_code}. Using offline cache mode.")
-                response_data = self.read_local()
-        except Exception:
-            self.on_status("Connection failed. Using offline cache mode.")
-            response_data = self.read_local()
+        cached = self.read_games()
+        etag = None
+        if cached:
+            etag = cached.get('etag')
+            self.on_status(f"Loaded {len(cached['games'])} games from cache. Checking for updates...")
+            self.on_data(cached['games'])
+        else:
+            self.on_status("Connecting to Discord API...")
 
-        if not response_data:
+        headers = {'If-None-Match': etag} if etag else {}
+        try:
+            r = requests.get(API_ENDPOINT, headers=headers, timeout=30)
+        except Exception:
+            r = None
+
+        if r is not None and r.status_code == 304:
+            self.on_status(f"Up to date: {len(cached['games'])} games.")
+            return
+
+        if r is not None and r.status_code == 200:
+            try:
+                games = build_list(r.json())
+            except Exception:
+                games = None
+            if games:
+                self.write_games(games, r.headers.get('ETag'))
+                self.on_data(games)
+                return
+
+        if cached:
+            self.on_status("Update check failed. Using cached list.")
+            return
+
+        self.on_status("Connection failed. Using offline cache mode.")
+        raw = self.read_local()
+        if not raw:
             self.on_status("No data available to show.")
             self.on_data([])
             return
+        self.on_data(build_list(raw))
 
-        self.on_status(f"Analyzing {len(response_data)} records...")
-        final_list = []
-        
-        # Process the raw Discord API response to extract relevant Windows games
-        for entry in response_data:
-            exe_list = [e['name'] for e in entry.get('executables', []) if e.get('os') == 'win32']
-            if not exe_list:
-                continue
-                
-            game_id = entry.get('id')
-            icon_hash = entry.get('icon_hash')
-            icon_url = None
-            if icon_hash:
-                icon_url = f"https://cdn.discordapp.com/app-icons/{game_id}/{icon_hash}.png"
-                
-            final_list.append({
-                "title": entry.get('name', 'Unknown App'),
-                "id": game_id,
-                "exes": exe_list,
-                "icon_url": icon_url
-            })
-            
-        self.on_status(f"Ready: {len(final_list)} PC Games found.")
-        self.on_data(final_list)
+    def read_games(self):
+        try:
+            with open(self.games_file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            if data.get('schema') == CACHE_SCHEMA and data.get('games'):
+                return data
+        except:
+            pass
+        return None
+
+    def write_games(self, games, etag):
+        tmp = self.games_file + ".tmp"
+        try:
+            with open(tmp, 'w', encoding='utf-8') as f:
+                json.dump({"schema": CACHE_SCHEMA, "etag": etag, "games": games}, f, ensure_ascii=False)
+            os.replace(tmp, self.games_file)
+        except:
+            pass
 
     def read_local(self):
-        """
-        Reads the cached detectable.json file if network fails.
-        
-        Returns:
-            dict or None: The parsed JSON data if successful, None otherwise.
-        """
         if os.path.exists(self.save_file):
             try:
                 with open(self.save_file, 'r', encoding='utf-8') as f:

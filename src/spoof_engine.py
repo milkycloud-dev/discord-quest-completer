@@ -6,6 +6,7 @@ import re
 import subprocess
 import time
 from logger import log
+from rpc_presence import RpcPresence
 
 class SpoofEngine:
     """
@@ -22,6 +23,7 @@ class SpoofEngine:
         """
         self.meta = metadata
         self.active_proc = None
+        self.rpc = None
         self.workspace_dir = None
         self.start_time = None
         self.chosen_exe = None
@@ -43,7 +45,7 @@ class SpoofEngine:
         Returns:
             bool: True if started successfully, False otherwise.
         """
-        if self.active_proc:
+        if self.active_proc or self.rpc:
             self.stop()
             
         app_title = self.meta.get('title', 'Unknown')
@@ -52,13 +54,15 @@ class SpoofEngine:
         if not chosen_exe:
             chosen_exe = execs[0]
             
-        if not chosen_exe.lower().endswith(".exe"):
-            chosen_exe += ".exe"
+        chosen_exe = chosen_exe.strip()
             
         self.chosen_exe = chosen_exe
         if window_title is not None:
             self.window_title = window_title
             
+        if self.meta.get('no_exe'):
+            return self._start_rpc(app_title)
+
         folder_prefix = self.clean_path(app_title)
         app_ident = self.meta.get('id', '0')
         sys_temp = tempfile.gettempdir()
@@ -66,7 +70,10 @@ class SpoofEngine:
         
         try:
             os.makedirs(self.workspace_dir, exist_ok=True)
-            final_exe_path = os.path.join(self.workspace_dir, os.path.basename(chosen_exe))
+            rel_parts = [p for p in chosen_exe.lstrip(">").replace("\\", "/").split("/") if p not in ("", ".", "..")]
+            if not rel_parts:
+                rel_parts = ["game.exe"]
+            final_exe_path = os.path.join(self.workspace_dir, *rel_parts)
             os.makedirs(os.path.dirname(final_exe_path), exist_ok=True)
             
             # Find the runner executable
@@ -80,6 +87,9 @@ class SpoofEngine:
                 # For Linux, Discord scans /proc for executable names.
                 runner_src = "/bin/sleep"
                 args = [final_exe_path, "10000000"] # Sleep for ~115 days
+                if "coreutils" in os.path.realpath(runner_src):
+                    runner_src = shutil.which("perl") or runner_src
+                    args = [final_exe_path, "-e", "sleep 10000000"]
 
             shutil.copy(runner_src, final_exe_path)
         except Exception as e:
@@ -110,7 +120,23 @@ class SpoofEngine:
             log("log_spoof_fail_err", app_title, str(e))
             return False
 
+    def _start_rpc(self, app_title):
+        rpc = RpcPresence(self.meta.get('id'))
+        if not rpc.start():
+            log("log_spoof_fail_err", app_title, rpc.error or "RPC failed")
+            return False
+        self.rpc = rpc
+        self.start_time = time.time()
+        log("log_spoof_start", app_title, "RPC")
+        return True
+
     def stop(self):
+        if self.rpc:
+            self.rpc.stop()
+            self.rpc = None
+            self.start_time = None
+            log("log_spoof_stop", self.meta.get('title', 'Unknown'))
+            return
         """
         Terminate the spoofed background process and clean up the sandbox.
         """
@@ -138,6 +164,8 @@ class SpoofEngine:
         """
         Check if the spoofed process is currently active.
         """
+        if self.rpc:
+            return self.rpc.is_alive()
         if not self.active_proc:
             return False
         return self.active_proc.poll() is None

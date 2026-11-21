@@ -40,7 +40,7 @@ class CLIApp:
         self.console.clear()
         
         # Ask language first
-        lang_choice = Prompt.ask("Choose language / Выберите язык (en/ru)", choices=["en", "ru"], default="ru")
+        lang_choice = Prompt.ask("Choose language / Выберите язык (en/ru)", choices=["en", "ru"], default="en")
         t.set_lang(lang_choice)
         
         self.console.clear()
@@ -75,7 +75,7 @@ class CLIApp:
                     engine.stop()
                 break
             elif action == "lang":
-                lang_choice = Prompt.ask(t.get("cli_choose_lang") + " (en/ru)", choices=["en", "ru"], default="ru")
+                lang_choice = Prompt.ask(t.get("cli_choose_lang") + " (en/ru)", choices=["en", "ru"], default="en")
                 t.set_lang(lang_choice)
             elif action == "active":
                 self.display_active()

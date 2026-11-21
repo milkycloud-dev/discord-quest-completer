@@ -1,4 +1,4 @@
-name: Release 2.0
+name: Release
 
 on:
   workflow_dispatch:
@@ -33,27 +33,27 @@ jobs:
         
     - name: Build with PyInstaller (Windows)
       if: matrix.os == 'windows-latest'
-      run: flet pack src/app.py --icon "icon.ico" --add-data "src/runner.exe;." --add-data "icon.ico;." --name "DiscordOrbsEarner"
+      run: flet pack src/app.py --icon "icon.ico" --add-data "src/runner.exe;." --add-data "icon.ico;." --name "DiscordQuestCompleter"
         
     - name: Build with PyInstaller (Linux)
       if: matrix.os == 'ubuntu-latest'
-      run: flet pack src/app.py --icon "icon.ico" --add-data "src/runner.exe:." --add-data "icon.ico:." --name "DiscordOrbsEarner"
+      run: flet pack src/app.py --icon "icon.ico" --add-data "src/runner.exe:." --add-data "icon.ico:." --name "DiscordQuestCompleter"
         
     - name: Zip Artifacts (Windows)
       if: matrix.os == 'windows-latest'
-      run: Compress-Archive -Path dist/DiscordOrbsEarner.exe -DestinationPath DiscordOrbsEarner-Windows.zip
+      run: Compress-Archive -Path dist/DiscordQuestCompleter.exe -DestinationPath DiscordQuestCompleter-Windows.zip
         
     - name: Zip Artifacts (Linux)
       if: matrix.os == 'ubuntu-latest'
       run: |
         cd dist
-        zip ../DiscordOrbsEarner-Linux.zip DiscordOrbsEarner
+        zip ../DiscordQuestCompleter-Linux.zip DiscordQuestCompleter
         
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
         name: build-${{ matrix.os }}
-        path: DiscordOrbsEarner-*.zip
+        path: DiscordQuestCompleter-*.zip
 
   release:
     needs: build
@@ -68,8 +68,8 @@ jobs:
     - name: Create Release
       uses: softprops/action-gh-release@v2
       with:
-        tag_name: v2.0
-        name: Release 2.0
+        tag_name: v2.1
+        name: Discord Quest Completer 2.1
         draft: false
         prerelease: false
         files: artifacts/*.zip

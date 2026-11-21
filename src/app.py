@@ -12,7 +12,7 @@ from i18n import t
 
 # --- CLI Entry Point ---
 def check_cli():
-    parser = argparse.ArgumentParser(description="Discord Orbs Earner")
+    parser = argparse.ArgumentParser(description="Discord Quest Completer")
     parser.add_argument("--cli", action="store_true", help="Run in Command Line Interface mode")
     args, unknown = parser.parse_known_args()
 
@@ -28,7 +28,7 @@ def check_cli():
 
 # --- Flet GUI App ---
 def main(page: ft.Page):
-    t.set_lang("ru")
+    t.set_lang("en")
     page.title = t.get("title")
     page.theme_mode = ft.ThemeMode.DARK
     page.window.icon = "icon.ico"
@@ -37,10 +37,16 @@ def main(page: ft.Page):
     page.padding = 20
     page.bgcolor = "#313338"
     
+    def run_on_loop(fn, *args):
+        page.loop.call_soon_threadsafe(fn, *args)
+
     # State
     all_games = []
     filtered_games = []
     active_engines = {} # game_id -> SpoofEngine
+    page_size = 50
+    shown = page_size
+    filter_timer = None
     
     # UI Elements
     title_text = ft.Text(t.get("title"), size=24, weight=ft.FontWeight.BOLD, color="#F2F3F5")
@@ -64,9 +70,11 @@ def main(page: ft.Page):
         page.update()
 
     def on_api_data(data):
-        nonlocal all_games, filtered_games
+        nonlocal all_games, filtered_games, shown
         all_games = data
-        filtered_games = data.copy()
+        shown = page_size
+        q = (search_field.value or "").lower()
+        filtered_games = [g for g in data if q in g.get('search', g['title'].lower())] if q else data.copy()
         
         status_text.value = t.get("ready", len(data))
         log(t.get("log_fetch_success", len(data)))
@@ -83,15 +91,29 @@ def main(page: ft.Page):
         log(t.get("log_fetching"))
         page.update()
         
-        worker = DiscordAPIWorker(on_api_data, on_api_status)
+        worker = DiscordAPIWorker(lambda d: run_on_loop(on_api_data, d), lambda m: run_on_loop(on_api_status, m))
         worker.start()
 
-    def filter_games(query):
-        nonlocal filtered_games
+    def apply_filter(query):
+        nonlocal filtered_games, shown
         query = query.lower()
         if query:
             log("log_filtering", query)
-        filtered_games = [g for g in all_games if query in g['title'].lower()]
+        shown = page_size
+        filtered_games = [g for g in all_games if query in g.get('search', g['title'].lower())]
+        render_games()
+
+    def filter_games(query):
+        nonlocal filter_timer
+        if filter_timer:
+            filter_timer.cancel()
+        filter_timer = threading.Timer(0.3, run_on_loop, args=(apply_filter, query))
+        filter_timer.daemon = True
+        filter_timer.start()
+
+    def show_more(e=None):
+        nonlocal shown
+        shown += page_size * 2
         render_games()
 
     def play_game(game_meta):
@@ -112,7 +134,7 @@ def main(page: ft.Page):
         
     def render_games():
         games_list.controls.clear()
-        display_limit = min(200, len(filtered_games))
+        display_limit = min(shown, len(filtered_games))
         
         for i in range(display_limit):
             g = filtered_games[i]
@@ -120,7 +142,7 @@ def main(page: ft.Page):
             
         if len(filtered_games) > display_limit:
             games_list.controls.append(
-                ft.Text(t.get("more_games", len(filtered_games) - display_limit), color="#B5BAC1", italic=True)
+                ft.TextButton(t.get("show_more", len(filtered_games) - display_limit), on_click=show_more)
             )
         page.update()
         
@@ -176,8 +198,8 @@ def main(page: ft.Page):
         return ft.Container(
             content=ft.Row([
                 ft.Image(src=icon_src, width=32, height=32, fit="contain") if isinstance(icon_src, str) and icon_src.startswith("http") else ft.Icon(ft.Icons.VIDEOGAME_ASSET, size=32),
-                ft.Text(f"{index}. {game_meta['title']}", size=16, color="#DBDEE1", expand=True),
-                ft.ElevatedButton(t.get("btn_play"), icon=ft.Icons.PLAY_ARROW, bgcolor="#23A559", color=ft.Colors.WHITE, on_click=lambda e: play_game(game_meta))
+                ft.Text(f"{index}. {game_meta['title']}" + (t.get("no_exe") if game_meta.get('no_exe') else ""), size=16, color="#DBDEE1", expand=True),
+                ft.Button(t.get("btn_play"), icon=ft.Icons.PLAY_ARROW, bgcolor="#23A559", color=ft.Colors.WHITE, on_click=lambda e: play_game(game_meta))
             ]),
             padding=10,
             bgcolor="#2B2D31",
@@ -255,7 +277,7 @@ def main(page: ft.Page):
         except:
             pass
         
-    sys_log.subscribe(update_logs)
+    sys_log.subscribe(lambda ev: run_on_loop(update_logs, ev))
     
     # Render logs initially
     render_logs()
@@ -284,8 +306,8 @@ def main(page: ft.Page):
     btn_reload = ft.IconButton(icon=ft.Icons.REFRESH, tooltip=t.get("reload"), on_click=fetch_quests, icon_color="#5865F2")
     
     lang_dd = ft.Dropdown(
-        options=[ft.dropdown.Option("RU"), ft.dropdown.Option("EN")],
-        value="RU",
+        options=[ft.dropdown.Option("EN"), ft.dropdown.Option("RU")],
+        value="EN",
         width=120,
         bgcolor="#1E1F22",
         border_color="#1E1F22"
@@ -356,7 +378,7 @@ def main(page: ft.Page):
             time.sleep(1)
             if active_engines:
                 try:
-                    update_timers_logic()
+                    run_on_loop(update_timers_logic)
                 except Exception as e:
                     log("log_spoof_fail_err", "Timer Loop", str(e))
                     
@@ -372,4 +394,4 @@ if __name__ == '__main__':
         assets_dir = sys._MEIPASS
     else:
         assets_dir = "."
-    ft.app(target=main, assets_dir=assets_dir)
+    ft.run(main, assets_dir=assets_dir)

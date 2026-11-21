@@ -1,10 +1,10 @@
 TRANSLATIONS = {
     "en": {
-        "title": "Discord Orbs Earner",
+        "title": "Discord Quest Completer",
         "fetch": "Fetching from Discord API...",
         "filter": "Filter games...",
         "reload": "Reload",
-        "ready": "Supported Windows Games: {}",
+        "ready": "Games available: {}",
         "settings_title": "Settings: {}",
         "settings_desc": "Configure spoofing for this game.",
         "settings_exe": "Executable Name:",
@@ -36,14 +36,16 @@ TRANSLATIONS = {
         "cli_no_active": "No active games running.",
         "cli_stop_prompt": "Enter index of game to stop (or 0 to cancel)",
         "cli_sys_log": "--- Live System Log ---",
-        "more_games": "... and {} more. Use search to refine."
+        "more_games": "... and {} more. Use search to refine.",
+        "show_more": "Show more ({} left)",
+        "no_exe": "  [via RPC, no exe in Discord DB]"
     },
     "ru": {
-        "title": "Discord Orbs Earner",
+        "title": "Discord Quest Completer",
         "fetch": "Получение данных с Discord API...",
         "filter": "Поиск игр...",
         "reload": "Обновить",
-        "ready": "Поддерживаемых игр для Windows: {}",
+        "ready": "Доступно игр: {}",
         "settings_title": "Настройки: {}",
         "settings_desc": "Настройте параметры запуска для этой игры.",
         "settings_exe": "Исполняемый файл:",
@@ -75,12 +77,14 @@ TRANSLATIONS = {
         "cli_no_active": "Нет запущенных игр.",
         "cli_stop_prompt": "Введите индекс игры для остановки (или 0 для отмены)",
         "cli_sys_log": "--- Системный лог ---",
-        "more_games": "... и еще {}. Используйте поиск для уточнения."
+        "more_games": "... и еще {}. Используйте поиск для уточнения.",
+        "show_more": "Показать ещё (осталось {})",
+        "no_exe": "  [через RPC, exe нет в базе Discord]"
     }
 }
 
 class I18n:
-    def __init__(self, lang="ru"):
+    def __init__(self, lang="en"):
         self.set_lang(lang)
 
     def set_lang(self, lang):
